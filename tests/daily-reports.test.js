@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
 import {PGlite} from '@electric-sql/pglite';
 import {readFile} from 'node:fs/promises';
-import {readRows,reportDate,zolveWorkbook} from '../server/workbooks.js';
+import {readRows,reportDate,zolveWorkbook} from '../supabase/functions/_shared/workbooks.js';
 const cfg=JSON.parse(await readFile(new URL('../config/defaults.json',import.meta.url),'utf8'));
 const mapping=cfg.stock.FRZ;
 async function sample(changes={},empty=false){

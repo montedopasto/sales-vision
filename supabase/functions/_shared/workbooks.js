@@ -1,6 +1,8 @@
 import ExcelJS from 'exceljs';
-import { createHash } from 'node:crypto';
-export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+export async function sha256(bytes){
+ const digest=await globalThis.crypto.subtle.digest('SHA-256',bytes);
+ return [...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');
+}
 export function validSSCC(s) {
  if(!/^\d{18}$/.test(s)) return false;
  const sum=[...s.slice(0,17)].reverse().reduce((n,d,i)=>n+Number(d)*(i%2?1:3),0);
@@ -17,22 +19,24 @@ function date(v) {
  return s;
 }
 function checkZip(bytes) {
+ const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
  // Bound ZIP expansion before ExcelJS parses XML.
  let end=-1;
- for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(bytes.readUInt32LE(i)===0x06054b50){end=i;break;}
+ for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(view.getUint32(i,true)===0x06054b50){end=i;break;}
  if(end<0)throw new Error('O ficheiro não é um XLSX válido');
- const count=bytes.readUInt16LE(end+10),offset=bytes.readUInt32LE(end+16);
+ const count=view.getUint16(end+10,true),offset=view.getUint32(end+16,true);
  if(count>2000||count===65535||offset>=end)throw new Error('Estrutura Excel excedida');
  let pos=offset,total=0;
  for(let i=0;i<count;i++){
-  if(pos+46>end||bytes.readUInt32LE(pos)!==0x02014b50)throw new Error('Arquivo Excel inválido');
-  if(bytes.readUInt16LE(pos+8)&1)throw new Error('Excel encriptado não suportado');
-  total+=bytes.readUInt32LE(pos+24);
+  if(pos+46>end||view.getUint32(pos,true)!==0x02014b50)throw new Error('Arquivo Excel inválido');
+  if(view.getUint16(pos+8,true)&1)throw new Error('Excel encriptado não suportado');
+  total+=view.getUint32(pos+24,true);
   if(total>50*1024*1024)throw new Error('Excel expandido excede 50 MB');
-  pos+=46+bytes.readUInt16LE(pos+28)+bytes.readUInt16LE(pos+30)+bytes.readUInt16LE(pos+32);
+  pos+=46+view.getUint16(pos+28,true)+view.getUint16(pos+30,true)+view.getUint16(pos+32,true);
  }
 }
 export async function readRows(bytes, mapping, kind) {
+ bytes=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
  if(!mapping?.reviewed || !mapping.sheet || !mapping.columns || !Number.isInteger(mapping.headerRow) || mapping.headerRow<1) throw new Error('Mapeamento dos anexos por validar');
  if(bytes.length>10*1024*1024) throw new Error('Ficheiro demasiado grande');
  checkZip(bytes);
@@ -92,7 +96,7 @@ export async function zolveWorkbook(order, config) {
   sheet.addRow({order_id:order.id,client_id:c.id,client_name:c.name,address:c.address,postal_code:c.postal_code,city:c.city,delivery:order.delivery,product:line.product,description:s.description,sscc:s.sscc,lot:s.lot,warehouse:s.warehouse,boxes:r.boxes,expires:s.expires});
  }
  sheet.getRow(1).font={bold:true}; sheet.views=[{state:'frozen',ySplit:1}];
- return Buffer.from(await book.xlsx.writeBuffer());
+ return new Uint8Array(await book.xlsx.writeBuffer());
 }
 
 
@@ -144,5 +148,5 @@ async function zolveForm(order,config){
  for(const n of [15,16]){sheet.getRow(n).height=25;for(let col=1;col<=12;col++){const cell=sheet.getCell(n,col);cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE9EEE5'}};cell.font={name:'Arial',size:10,bold:true};cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};}}
  sheet.getRow(2).height=30;sheet.getRow(12).height=26;
  sheet.getCell(`E${footer}`).font={name:'Arial',size:10,bold:true};sheet.pageSetup.printArea=`A1:L${footer}`;
- book.calcProperties.fullCalcOnLoad=true;return Buffer.from(await book.xlsx.writeBuffer());
+ book.calcProperties.fullCalcOnLoad=true;return new Uint8Array(await book.xlsx.writeBuffer());
 }

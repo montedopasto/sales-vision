@@ -1,21 +1,20 @@
 import {createClient} from '@supabase/supabase-js';
 import './styles.css';
+import {createApi} from './client-api.js';
+const appBase=new URL(import.meta.env.BASE_URL,location.href);
 const app=document.querySelector('#app');let sb,session,data,view='dashboard',busy=false,requestId=crypto.randomUUID();let lines=[{product:'',boxes:1}];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={reserved:'Reservada',sending:'Envio em curso',submitted:'Aceite pelo Outlook',uncertain:'Verificar envio',cancelled:'Cancelada',fulfilled:'Expedição confirmada'};
 const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Lisbon'}).format(new Date());
 const fmt=x=>new Intl.DateTimeFormat('pt-PT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Lisbon'}).format(new Date(x));
 const toast=m=>{document.querySelector('#toast')?.remove();let el=document.createElement('div');el.id='toast';el.setAttribute('role','status');el.textContent=m;document.body.append(el);setTimeout(()=>el.remove(),8000);};
-async function api(path,options={}){
- const current=(await sb.auth.getSession()).data.session;if(!current)throw new Error('Sessão expirada');
- const r=await fetch('/api'+path,{...options,headers:{Authorization:`Bearer ${current.access_token}`,...(options.body&&!(options.body instanceof ArrayBuffer)?{'Content-Type':'application/json'}:{}),...options.headers}});
- if(!r.ok){let e=await r.json();throw new Error(e.error||'Operação falhou');}return r;
-}
+let request;
+async function api(path,options={}){return request(path,options);}
 async function load(){data=await(await api('/dashboard')).json();render();}
 function logo(){return '<div class="brand"><span class="mark">S</span>Sales Vision<small>MONTE DO PASTO</small></div>';}
 function login(configured,error=''){
  app.innerHTML=`<main class="login">${logo()}<div class="panel"><div class="eyebrow">GESTÃO COMERCIAL</div><h1>Do stock<br>à encomenda.</h1><p class="muted">Encomendas, reservas e expedição num só lugar. Entre com a sua conta Microsoft 365 da Monte do Pasto.</p>${error?`<p class="notice error">${esc(error)}</p>`:''}${!configured?'<div class="notice">Aplicação pronta para configuração. A ligação ao Supabase e ao Microsoft Entra ID ainda não está definida.</div>':''}<button id="login" class="dark" ${configured?'':'disabled'}>Entrar com Microsoft →</button><p class="muted" style="margin-top:22px;font-size:12px">Acesso reservado a utilizadores autorizados.</p></div></main>`;
- document.querySelector('#login').onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provider:'azure',options:{scopes:'email offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.Send',redirectTo:location.origin}});if(error)toast(error.message);};
+ document.querySelector('#login').onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provider:'azure',options:{scopes:'email offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.Send',redirectTo:appBase.href}});if(error)toast(error.message);};
 }
 function stockProducts(){return [...new Map(data.stock.map(s=>[s.product,s])).values()];}
 function empty(title,body){return `<div class="empty"><strong>${title}</strong>${body}</div>`;}
@@ -31,7 +30,7 @@ function lineRows(){document.querySelector('#lines').innerHTML=lines.map((l,i)=>
  document.querySelectorAll('[data-product]').forEach(el=>el.onchange=()=>{lines[el.dataset.product].product=el.value;});document.querySelectorAll('[data-boxes]').forEach(el=>el.oninput=()=>{lines[el.dataset.boxes].boxes=Number(el.value);});document.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{lines.splice(Number(el.dataset.remove),1);lineRows();});}
 function admin(){return `<div class="heading"><div><div class="eyebrow">ADMINISTRAÇÃO</div><h1>Fontes e importações</h1><p class="muted">Validação integral antes de atualizar o stock.</p></div></div><div class="notice">FRZ/FRE: folha STOCK e colunas validadas com os relatórios fornecidos. Bloqueios e dados incompletos são preservados. A lista de clientes continua a depender do ficheiro de clientes.</div><div class="panel"><h2>Importar ficheiro Excel</h2><form id="import-form"><div class="grid"><div><label for="kind">Origem</label><select id="kind"><option>FRZ</option><option>FRE</option><option value="clients">Clientes</option></select></div><div><label>Data do relatório</label><p class="muted">Lida do nome original do DailyReport. A hora de receção não é tratada como hora de medição.</p></div></div><div class="file-row"><label for="file">Ficheiro .xlsx</label><input id="file" type="file" accept=".xlsx" required></div><button class="dark">Validar e importar</button></form></div><div class="panel"><h2>Últimas importações</h2>${data.snapshots.map(s=>`<div class="status-strip"><strong>${esc(s.source)}</strong><span>${s.observed_precision==='date'?esc(s.report_date)+' (data do relatório)':fmt(s.observed_at)}</span></div>`).join('')||empty('Sem importações','Nenhum stock fictício foi carregado.')}</div>`;}
 function render(){
- app.innerHTML=`<div class="shell"><aside class="sidebar">${logo()}<nav>${[['dashboard','◫ Visão geral'],['new','＋ Nova encomenda'],['orders','▤ Encomendas'],['stock','▦ Stock disponível'],...(data.member.role==='admin'?[['admin','⚙ Administração']]:[])].map(([id,label])=>`<button data-view="${id}" class="${view===id?'active':''}">${label}</button>`).join('')}</nav><footer>MONTE DO PASTO<br>Operação comercial · Fase 1<br>Sales Vision 0.2</footer></aside><div class="workspace"><header class="topbar"><span>${esc(data.user.email)}</span><button id="logout">Sair</button></header><main class="content">${view==='dashboard'?dashboard():view==='new'?newOrder():view==='orders'?'<div class="heading"><h1>Encomendas</h1><button class="primary" data-view="new">+ Nova encomenda</button></div><div class="panel">'+tableOrders()+'</div>':view==='stock'?stock():admin()}</main></div></div><dialog id="detail"></dialog>`;
+ app.innerHTML=`<div class="shell"><aside class="sidebar">${logo()}<nav>${[['dashboard','◫ Visão geral'],['new','＋ Nova encomenda'],['orders','▤ Encomendas'],['stock','▦ Stock disponível'],...(data.member.role==='admin'?[['admin','⚙ Administração']]:[])].map(([id,label])=>`<button data-view="${id}" class="${view===id?'active':''}">${label}</button>`).join('')}</nav><footer>MONTE DO PASTO<br>Operação comercial · Fase 1<br>Sales Vision 0.3</footer></aside><div class="workspace"><header class="topbar"><span>${esc(data.user.email)}</span><button id="logout">Sair</button></header><main class="content">${view==='dashboard'?dashboard():view==='new'?newOrder():view==='orders'?'<div class="heading"><h1>Encomendas</h1><button class="primary" data-view="new">+ Nova encomenda</button></div><div class="panel">'+tableOrders()+'</div>':view==='stock'?stock():admin()}</main></div></div><dialog id="detail"></dialog>`;
  document.querySelectorAll('[data-view]').forEach(el=>el.onclick=()=>{view=el.dataset.view;render();});document.querySelector('#logout').onclick=async()=>{await sb.auth.signOut();location.reload();};
  document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openOrder(el.dataset.open).catch(e=>toast(e.message)));
  if(view==='stock'){stockRows();document.querySelector('#search').oninput=e=>stockRows(e.target.value);}
@@ -55,8 +54,10 @@ async function openOrder(id){
  };}
 }
 try{
- const cfg=await(await fetch('/api/config')).json();if(!cfg.configured)login(false);else{
-  sb=createClient(cfg.url,cfg.key,{auth:{flowType:'pkce'}});session=(await sb.auth.getSession()).data.session;
+ const cfg=await(await fetch(new URL('config.json',appBase))).json();
+ const url=import.meta.env.VITE_SUPABASE_URL||cfg.supabaseUrl;const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||cfg.supabasePublishableKey;
+ if(!url||!key)login(false);else{
+  sb=createClient(url,key,{auth:{flowType:'pkce',storageKey:'sales-vision-auth'}});request=createApi(sb);session=(await sb.auth.getSession()).data.session;
   // Provider tokens are used only in memory and never copied to application storage.
   sb.auth.onAuthStateChange((event,s)=>{session=s;if(s?.provider_token)session.provider_token=s.provider_token;});
   if(session){try{await load();}catch(e){login(true,e.message);}}else login(true);

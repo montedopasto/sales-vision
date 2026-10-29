@@ -12,6 +12,7 @@ before(async()=>{
  await db.exec(await readFile(new URL('../db/001_sales_vision.sql',import.meta.url),'utf8'));
  await db.exec(`create function auth.jwt() returns jsonb language sql as $$select '{"email":"synthetic@example.invalid","user_metadata":{"full_name":"Synthetic Test"}}'::jsonb$$`);
  await db.exec(await readFile(new URL('../db/002_daily_reports.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../db/003_github_pages.sql',import.meta.url),'utf8'));
  await db.exec(`insert into auth.users values('${uid}');insert into public.sv_users values('${uid}','test-oid','admin',true);select set_config('test.uid','${uid}',false);`);
  await rpc('select public.sv_import_clients($1::jsonb)',[JSON.stringify([{id:'TEST-C',name:'Synthetic',address:'Test',postal_code:'Test',city:'Test'}])]);
  await rpc('select public.sv_import_stock($1,now()-interval \'1 minute\',$2,$3::jsonb)',['FRZ','a'.repeat(64),JSON.stringify([stock('000000000000000001',day,4),stock('000000000000000002',late,10),stock('000000000000000003',late,20,true)])]);
@@ -76,4 +77,13 @@ test('daily snapshots use report date, preserve empty reports and quarantine inc
  assert.equal((await rpc('select owner_contact from sv_orders where id=$1',[order.rows[0].id])).rows[0].owner_contact.email,'synthetic@example.invalid');
  await assert.rejects(rpc('select public.sv_reserve(gen_random_uuid(),$1,$2,$3::jsonb)',['TEST-C',day,'[{"product":"DAILY-TEST","boxes":1}]']),/insuficiente/);
  await assert.rejects(rpc('select public.sv_import_daily_stock($1,$2,$3,$4::jsonb)',['FRE',current,'f'.repeat(64),JSON.stringify([fresh])]),/antigo|ambíguo/);
+});
+test('Pages integration settings are private and only admins can update them',async()=>{
+ await db.exec(`select set_config('test.uid','${uid}',false)`);
+ await rpc('select public.sv_set_integration($1::jsonb)',['{"recipients":["synthetic@example.invalid"]}']);
+ await db.exec('set role authenticated');assert.equal((await rpc('select count(*)::int n from sv_settings')).rows[0].n,1);
+ await assert.rejects(rpc("update sv_settings set value='{}'"),/permission denied/);
+ await db.exec("select set_config('test.uid','00000000-0000-0000-0000-000000000099',false)");assert.equal((await rpc('select count(*)::int n from sv_settings')).rows[0].n,0);
+ await assert.rejects(rpc("select public.sv_set_integration('{}')"),/Administrador/);
+ await db.exec('reset role;set role anon');await assert.rejects(rpc('select * from sv_settings'),/permission denied/);await db.exec('reset role');
 });

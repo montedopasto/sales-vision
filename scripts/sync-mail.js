@@ -1,6 +1,6 @@
 // Run from a scheduler. No mail is sent by this worker.
-import {client,config,unwrap,env} from '../server/services.js';
-import {readRows,sha256,reportDate} from '../server/workbooks.js';
+import {client,config,unwrap,env} from './services.js';
+import {readRows,sha256,reportDate} from '../supabase/functions/_shared/workbooks.js';
 const required=['ENTRA_TENANT_ID','ENTRA_CLIENT_ID','ENTRA_CLIENT_SECRET','GRAPH_MAILBOX','GRAPH_FOLDER_ID','GRAPH_ALLOWED_SENDER'];
 for(const name of required)if(!env[name])throw new Error(`Configurar ${name}`);
 if(!/^[0-9a-f-]{36}$/i.test(env.ENTRA_TENANT_ID))throw new Error('Tenant Entra inválido');
@@ -24,7 +24,7 @@ for(const mail of candidates.reverse()){
   const source=matches[0],mapping=cfg.stock[source];
   const day=reportDate(file.name,mapping);
   if(file.size>10*1024*1024||!file.contentBytes)throw new Error('Anexo inválido ou demasiado grande');
-  const bytes=Buffer.from(file.contentBytes,'base64'),hash=sha256(bytes);
+  const bytes=Buffer.from(file.contentBytes,'base64'),hash=await sha256(bytes);
   const previous=unwrap(await db.from('sv_snapshots').select('*').eq('source',source).maybeSingle());
   if(previous&&(previous.fingerprint===hash||Date.parse(previous.observed_at)>=Date.parse(day+'T00:00:00Z')))continue;
   const rows=await readRows(bytes,mapping,source);

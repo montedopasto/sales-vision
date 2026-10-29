@@ -1,2 +1,2 @@
-import { defineConfig } from 'vite';
-export default defineConfig({build:{outDir:'dist'},server:{proxy:{'/api':'http://localhost:3000'}}});
+import {defineConfig} from 'vite';
+export default defineConfig({base:process.env.PAGES_BASE||'./',build:{outDir:'dist'},server:{host:'127.0.0.1',port:3000}});

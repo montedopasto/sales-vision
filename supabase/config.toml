@@ -1,0 +1,3 @@
+project_id = "sales-vision"
+[functions.send-zolve]
+verify_jwt = true
