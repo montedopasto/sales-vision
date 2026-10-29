@@ -1,0 +1,79 @@
+{
+  "stock": {
+    "FRZ": {
+      "reviewed": true,
+      "profile": "zolve-daily-v1",
+      "sheet": "STOCK",
+      "headerRow": 1,
+      "columns": {
+        "warehouse": "Warehouse",
+        "sscc": "SSCC",
+        "product": "Article Code",
+        "description": "Article Name",
+        "lot": "Lot Code",
+        "expires": "BBD",
+        "entered": "Delivery Date",
+        "boxes": "#Boxes",
+        "blocked": "BlockedReasonCode",
+        "zone": "Zone",
+        "kg": "#Weight",
+        "block_reason": "MotivoBloqueio"
+      },
+      "allowedStatuses": [
+        "",
+        "Bloqueado"
+      ],
+      "blockedStatuses": [
+        "Bloqueado"
+      ],
+      "allowEmpty": true,
+      "temperatures": {
+        "FRZ - Congelados": -18
+      },
+      "fileNamePattern": "^Monte do Pasto \\(FRZ\\) Montijo_(?<date>\\d{8})_DailyReport\\.xlsx$"
+    },
+    "FRE": {
+      "reviewed": true,
+      "profile": "zolve-daily-v1",
+      "sheet": "STOCK",
+      "headerRow": 1,
+      "columns": {
+        "warehouse": "Warehouse",
+        "sscc": "SSCC",
+        "product": "Article Code",
+        "description": "Article Name",
+        "lot": "Lot Code",
+        "expires": "BBD",
+        "entered": "Delivery Date",
+        "boxes": "#Boxes",
+        "blocked": "BlockedReasonCode",
+        "zone": "Zone",
+        "kg": "#Weight",
+        "block_reason": "MotivoBloqueio"
+      },
+      "allowedStatuses": [
+        "",
+        "Bloqueado"
+      ],
+      "blockedStatuses": [
+        "Bloqueado"
+      ],
+      "allowEmpty": true,
+      "temperatures": {
+        "FRE4 - Frescos 4 °C": 4
+      },
+      "fileNamePattern": "^Monte do Pasto \\(FRE\\) Montijo_(?<date>\\d{8})_DailyReport\\.xlsx$"
+    }
+  },
+  "clients": null,
+  "zolve": {
+    "profile": "zolve-fm01107-v1",
+    "reviewed": true,
+    "formEmail": "logistica.geral@zolve.pt",
+    "logisticsPhone": "249 839 700"
+  },
+  "recipients": [],
+  "cc": [],
+  "subjectPrefix": "Pedido Saída Stock",
+  "body": "Bom dia,\n\nSegue em anexo pedido de saída de stock para entrega - {{delivery}}.\n\nReferência Sales Vision: {{order_id}}.\n\nObrigado."
+}

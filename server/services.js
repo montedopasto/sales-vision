@@ -7,7 +7,11 @@ export function client(token,service=false){
  if(!key)throw new Error('Configurar chave do serviço no servidor');
  return createClient(env.SUPABASE_URL,key,{auth:{persistSession:false,autoRefreshToken:false},global:token?{headers:{Authorization:`Bearer ${token}`}}:undefined});
 }
-export async function config(){return JSON.parse(await readFile(env.INTEGRATION_CONFIG||'config/example.json','utf8'));}
+export async function config(){
+ const defaults=JSON.parse(await readFile(new URL('../config/defaults.json',import.meta.url),'utf8'));
+ let overrides={};try{overrides=JSON.parse(await readFile(env.INTEGRATION_CONFIG||'config/live.json','utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}
+ return {...defaults,...overrides,stock:{...defaults.stock,...overrides.stock},zolve:{...defaults.zolve,...overrides.zolve}};
+}
 export function unwrap({data,error}){if(error)throw new Error(error.message);return data;}
 export async function getOrder(db,id){
  if(!/^[0-9a-f-]{36}$/i.test(id))throw new Error('Encomenda inválida');

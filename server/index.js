@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {existsSync} from 'node:fs';
 import {client,config,unwrap,getOrder,graph,message,env} from './services.js';
-import {readRows,zolveWorkbook,sha256} from './workbooks.js';
+import {readRows,zolveWorkbook,sha256,reportDate} from './workbooks.js';
 const app=express();app.disable('x-powered-by');app.use(express.json({limit:'1mb'}));
 app.use((req,res,next)=>{res.set({'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Cache-Control':'no-store'});next();});
 app.get('/api/config',(req,res)=>res.json({url:env.SUPABASE_URL||'',key:env.SUPABASE_PUBLISHABLE_KEY||'',configured:!!(env.SUPABASE_URL&&env.SUPABASE_PUBLISHABLE_KEY)}));
@@ -58,8 +58,8 @@ app.post('/api/import/:kind',express.raw({type:'application/octet-stream',limit:
  const kind=req.params.kind,cfg=await config();if(!['FRZ','FRE','clients'].includes(kind))throw new Error('Tipo de importação inválido');
  const mapping=kind==='clients'?cfg.clients:cfg.stock[kind];const rows=await readRows(req.body,mapping,kind);
  if(kind==='clients')unwrap(await req.db.rpc('sv_import_clients',{p_rows:rows}));
- else {const observed=req.headers['x-observed-at'];if(!observed||isNaN(Date.parse(observed)))throw new Error('Indique a data e hora do snapshot, não a data do upload');unwrap(await req.db.rpc('sv_import_stock',{p_source:kind,p_observed:observed,p_hash:sha256(req.body),p_rows:rows}));}
- res.json({imported:rows.length});
+ else {const fileName=decodeURIComponent(req.headers['x-file-name']||'');const day=reportDate(fileName,mapping);unwrap(await req.db.rpc('sv_import_daily_stock',{p_source:kind,p_date:day,p_hash:sha256(req.body),p_rows:rows}));}
+ res.json({imported:rows.length,quarantined:rows.filter(r=>r.quality_issues?.length).length,blocked:rows.filter(r=>r.blocked).length});
 });
 app.use('/api',(req,res)=>res.status(404).json({error:'Operação desconhecida'}));
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');

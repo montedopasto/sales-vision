@@ -1,6 +1,6 @@
 // Run from a scheduler. No mail is sent by this worker.
 import {client,config,unwrap,env} from '../server/services.js';
-import {readRows,sha256} from '../server/workbooks.js';
+import {readRows,sha256,reportDate} from '../server/workbooks.js';
 const required=['ENTRA_TENANT_ID','ENTRA_CLIENT_ID','ENTRA_CLIENT_SECRET','GRAPH_MAILBOX','GRAPH_FOLDER_ID','GRAPH_ALLOWED_SENDER'];
 for(const name of required)if(!env[name])throw new Error(`Configurar ${name}`);
 if(!/^[0-9a-f-]{36}$/i.test(env.ENTRA_TENANT_ID))throw new Error('Tenant Entra inválido');
@@ -22,16 +22,13 @@ for(const mail of candidates.reverse()){
   const matches=['FRZ','FRE'].filter(source=>cfg.stock[source]?.fileNamePattern&&new RegExp(cfg.stock[source].fileNamePattern).test(file.name));
   if(matches.length!==1)throw new Error('Nome do anexo sem correspondência única FRZ/FRE');
   const source=matches[0],mapping=cfg.stock[source];
-  // Received time is not assumed to equal stock observation time.
-  const match=new RegExp(mapping.snapshotPattern||'(?!)').exec(file.name);
-  if(!match?.groups?.date)throw new Error('Data do snapshot não identificada no anexo');
-  const observed=match.groups.date+(mapping.snapshotTimeSuffix||'');if(isNaN(Date.parse(observed)))throw new Error('Data/hora do snapshot inválida');
+  const day=reportDate(file.name,mapping);
   if(file.size>10*1024*1024||!file.contentBytes)throw new Error('Anexo inválido ou demasiado grande');
   const bytes=Buffer.from(file.contentBytes,'base64'),hash=sha256(bytes);
   const previous=unwrap(await db.from('sv_snapshots').select('*').eq('source',source).maybeSingle());
-  if(previous&&(previous.fingerprint===hash||Date.parse(previous.observed_at)>=Date.parse(observed)))continue;
+  if(previous&&(previous.fingerprint===hash||Date.parse(previous.observed_at)>=Date.parse(day+'T00:00:00Z')))continue;
   const rows=await readRows(bytes,mapping,source);
-  unwrap(await db.rpc('sv_import_stock',{p_source:source,p_observed:observed,p_hash:hash,p_rows:rows}));
+  unwrap(await db.rpc('sv_import_daily_stock',{p_source:source,p_date:day,p_hash:hash,p_rows:rows}));
   console.log(`${source}: ${rows.length} linhas importadas`);
  }
 }
