@@ -25,9 +25,9 @@ O workflow `.github/workflows/pages.yml` compila a aplicação, executa testes e
 2. Configurar as variáveis públicas `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` em **Settings → Secrets and variables → Actions → Variables**, ou editar `public/config.json` com esses dois valores públicos.
 3. Executar o workflow Sales Vision · GitHub Pages. Depois da primeira publicação, `PAGES_ENABLED=true` ativa atualizações a cada push na main.
 
-URL prevista pelo workflow: `https://montedopasto.github.io/sales-vision/`. Só se deve considerá-la publicada depois de confirmar o deploy.
+**Publicado e verificado:** https://montedopasto.github.io/sales-vision/. O workflow de publicação terminou com sucesso em 29/10/2026. A variável PAGES_ENABLED=true já está definida para publicar futuras alterações da main.
 
-**Estado verificado no GitHub:** este repositório foi criado privado. A página de Settings → Pages indica que o plano atual exige tornar o repositório público ou fazer upgrade para ativar Pages. A visibilidade não é alterada automaticamente por este código. Nenhum upgrade foi contratado.
+**Visibilidade:** repositório público por autorização expressa do utilizador em 29/10/2026. GitHub Pages está ativado com origem GitHub Actions e HTTPS. Não foi contratado upgrade. O login na aplicação continua desativado até preencher a configuração pública do Supabase e concluir as configurações Entra/Supabase indicadas abaixo.
 
 O site estático não contém clientes, stock real, destinatários de email, service role ou segredos Microsoft. A pasta `dist` é o único artefacto publicado; `config/live.json`, anexos e testes não fazem parte do site. Acesso a dados exige login e membro ativo, independentemente da visibilidade do código.
 

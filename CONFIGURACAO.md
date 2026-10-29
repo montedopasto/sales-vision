@@ -2,8 +2,8 @@
 
 Não é necessário alojamento web Node separado.
 
-1. Resolver a disponibilidade de GitHub Pages neste repositório: a configuração atual é privada e o GitHub indica que é necessário torná-la pública ou usar um plano elegível. Não alterar visibilidade sem autorização.
-2. Ativar Pages com GitHub Actions. O workflow pages.yml compila e publica só a pasta dist. URL prevista: https://montedopasto.github.io/sales-vision/.
+1. Concluído: repositório tornado público com autorização expressa do utilizador em 29/10/2026. GitHub Pages ativo, com publicação confirmada.
+2. Concluído: Pages configurado com GitHub Actions e PAGES_ENABLED=true. O site foi aberto e verificado em https://montedopasto.github.io/sales-vision/. O workflow publica só a pasta dist.
 3. Preencher as variáveis públicas SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY do build, ou public/config.json. Nunca usar service role ou segredos Entra nestes campos.
 4. Aplicar as migrações 001, 002 e 003, por ordem, depois de ensaio e backup, sem reaplicar as já executadas.
 5. Configurar o provider Entra/Azure e autorizar o redirect completo do GitHub Pages, incluindo /sales-vision/. Adicionar os membros reais em sv_users.

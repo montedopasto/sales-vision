@@ -8,12 +8,12 @@ Foram removidos o servidor Express e as chamadas da interface a /api. O callback
 
 A função Supabase de envio foi testada localmente quanto a autenticação, membro ativo, dono da encomenda, conta Outlook, tentativa única e resultado incerto. A execução real no Supabase continua dependente de configuração e ensaio; nenhum email foi enviado.
 
-## Impedimento concreto à publicação
+## Publicação concluída — 29/10/2026
 
-A página de definições GitHub Pages do repositório privado montedopasto/sales-vision mostra: “Upgrade or make this repository public to enable Pages”. A aplicação foi adaptada, mas ainda não está publicada num URL Pages. Não foi contratado upgrade nem alterada a visibilidade do repositório.
+O utilizador autorizou expressamente tornar público o repositório e publicar no GitHub Pages. A mudança foi concluída, Pages foi ativado com origem GitHub Actions e o workflow de publicação terminou com sucesso.
 
-Tornar o repositório público expõe código e histórico, incluindo os totais usados nos testes. Os anexos originais, config/live.json e credenciais não estão no repositório. Essa mudança de visibilidade precisa de autorização do utilizador.
+Site aberto e verificado: https://montedopasto.github.io/sales-vision/.
 
-O workflow Pages está preparado. A publicação só corre depois de execução manual ou de ativar PAGES_ENABLED=true. A migração 003 guarda a configuração privada no Supabase; não contém destinatários ou credenciais reais.
+A variável PAGES_ENABLED=true já está configurada para publicar futuras alterações da main. O código e histórico estão públicos por autorização do utilizador. Os anexos originais, config/live.json e credenciais não estão no repositório nem no site.
 
-Permanecem pendentes a configuração Entra/Supabase, migrações, publicação da função de envio e ficheiro de clientes. Essas configurações são independentes de contratar alojamento web adicional, que deixou de ser necessário.
+A página publicada ainda mostra configuração pendente, com login desativado. Permanecem pendentes a configuração Entra/Supabase, as migrações, a publicação da função de envio e o ficheiro de clientes. Nenhum email de encomenda foi enviado e nenhuma base de produção foi modificada.
