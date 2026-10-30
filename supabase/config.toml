@@ -1,3 +1,6 @@
 project_id = "sales-vision"
 [functions.send-zolve]
 verify_jwt = true
+
+[functions.stockvision-read]
+verify_jwt = true

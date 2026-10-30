@@ -1,9 +1,11 @@
-# Stock partilhado — 30/10/2026
+# Leitura do Google Sheets — apenas ZOLVE
 
-A Sales Vision lê diretamente public.stocks_current através de uma função apenas de leitura, limitada aos membros ativos de sv_users. As tabelas, regras, permissões, código e importador da StockVision não são alterados. Não existe cópia nem importação FRZ/FRE pela Sales Vision. O job de mailbox separado foi removido. A importação de clientes mantém-se.
+Fonte verificada: https://docs.google.com/spreadsheets/d/1Ckji4wIRpD8ICvoQZ0eYG7oS_-qDreaOLv7wgU2X8dI/edit, folha STOCKS.
 
-Aplicar db/004_stockvision_live.sql após 001–003. A migração preserva as tabelas sv_ e reservas anteriores, troca apenas a leitura de sv_available e valida o stock da origem antes do envio. As antigas funções de importação de stock deixam de poder ser executadas pelos clientes ou pelo service role.
+Leitura autenticada através da função stockvision-read, sem persistir stock. O URL de leitura CSV inclui select * where G = 'ZOLVE'. O parser confirma os oito cabeçalhos e exclui novamente qualquer armazém diferente de ZOLVE antes de devolver os dados à app. A folha e a StockVision permanecem inalteradas.
 
-Esquema real verificado: codigo_artigo, nome_produto, sscc, lote, data_entrada_lote, data_validade, armazem, kg, created_at. A tabela estava vazia na inspeção. A data de inserção não é apresentada como data de medição/relatório. Quilos são mostrados como quilos.
+O backend não aceita URLs do browser e exige utilizador autenticado e membro ativo. Não se copiam chaves Google. A leitura pública foi verificada sem cookies ou credenciais. Não se alterou a partilha da folha.
 
-Este esquema não publica caixas, estado de bloqueio, temperatura ou data do relatório. As linhas são mostradas mas ficam impedidas de reserva e envio. Não se convertem quilos em caixas nem se assume que um lote está desbloqueado. Para concluir o fluxo comercial, a origem precisa de disponibilizar esses dados ou uma fonte comercial validada equivalente. Isso exige uma decisão explícita sobre a integração existente; esta alteração não modifica a StockVision.
+O campo KG é lido com os separadores portugueses; SSCC mantém o texto original. A hora da leitura é separada da data de observação, desconhecida. Não existem caixas, estado de bloqueio, temperatura e data do relatório nesta folha. Os valores não são inventados. As reservas/envios ficam impedidos na interface e na base de dados.
+
+Aplicar 005_google_sheets_source.sql após 004 para retirar as funções/views da ligação anterior e bloquear explicitamente reservas sem os dados comerciais. As tabelas de reservas e encomendas são preservadas. O teste da migração confirma a remoção da leitura da tabela errada.

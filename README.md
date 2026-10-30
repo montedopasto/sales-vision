@@ -1,23 +1,23 @@
 # Sales Vision — Monte do Pasto
 
-Aplicação comercial independente da StockVision, publicada em https://montedopasto.github.io/sales-vision/. GitHub Pages + Supabase existente; não requer servidor web separado.
+Aplicação comercial independente: https://montedopasto.github.io/sales-vision/. Versão 0.5.
 
-## Fonte única de stock
+## Fonte de stock correta
 
-A versão 0.4 lê `stocks_current` da StockVision diretamente, sem copiar ou importar FRZ/FRE. Reservas, encomendas, clientes e configurações continuam nas tabelas `sv_`. O código e o importador StockVision ficam intactos. A Sales Vision atualiza a leitura ao navegar e quando regressa ao separador.
+A Sales Vision consulta a folha STOCKS de StockVision AI - Monte do Pasto no Google Sheets e recebe **apenas o armazém ZOLVE**. Não importa FRZ/FRE, não lê stocks_current nem stocks_history e não guarda outra cópia do stock. Não altera a folha, o código ou o importador da StockVision.
 
-A integração usa apenas SELECT na origem, com acesso da aplicação limitado aos membros ativos. A migração 004 não altera tabelas, permissões ou triggers da StockVision. Retirou-se o job separado de importação de mailbox e o carregamento manual de stock. Mantém-se a importação de clientes.
+A função stockvision-read valida a sessão Microsoft/Supabase e o membro ativo antes da leitura. Consulta apenas o URL fixo da folha, com filtro Google G='ZOLVE', e volta a filtrar o armazém no servidor. Usa a leitura CSV pública já disponível, sem copiar a chave Google da StockVision ou mudar permissões. O browser não fornece um URL arbitrário.
 
-## Limitação verificada na origem
+Supabase mantém autenticação, membros, clientes, encomendas e reservas separadas. O stock atual vem do Google Sheets em cada leitura. A página relê ao navegar, regressar ao separador, carregar Atualizar ou de minuto a minuto na visão geral/stock.
 
-O esquema atual publica artigo, descrição, SSCC, lote, datas de entrada/validade, armazém, kg e data de inserção. Não publica caixas, estado de bloqueio, temperatura nem data do relatório. A aplicação apresenta os quilos e impede reservas/envios enquanto esses dados comerciais estiverem em falta. Não converte kg em caixas e não inventa metadados. A tabela stocks_current estava vazia na inspeção de 30/10/2026; stocks_history continha 70 962 registos, que não são tratados como stock atual.
+## Dados e limitações
 
-Login Microsoft e associação do primeiro administrador verificados. O fluxo de reservas e envio em produção depende dos dados comerciais acima e da lista real de clientes. Nenhum email foi enviado.
+Cabeçalhos verificados: CodigoArtigo, NomeProduto, SSCC, Lote, DataEntradaLote, DataValidade, Armazem, KG. Na verificação de 30/10/2026 havia 426 linhas ZOLVE. Quilos e SSCC são preservados; a hora de leitura não é tratada como data do relatório.
 
-## Desenvolvimento
+A folha não publica caixas, bloqueios, temperatura ou data do relatório. Reservas e envio continuam bloqueados enquanto faltarem esses dados; não se convertem kg em caixas nem se inventam metadados. Falta ainda o ficheiro real de clientes. Nenhum email foi enviado.
 
-Node 22 ou superior. Executar `npm ci`, `npm test`, `npm run build` e `npm start`.
+## Desenvolvimento e configuração
 
-As migrações em db/ aplicam-se por ordem, 001–004; não reaplicar as já executadas. Os testes PGlite cobrem reservas e segurança, incluindo a leitura direta do esquema real e a recusa de reservas sem caixas. Os testes de parser/Excel são de referência e não constituem um segundo importador de stock.
+Node 22+: npm ci, npm test, npm run build, npm start. Aplicar db/001 até 005 por ordem sem reaplicar migrações existentes. 004 é histórica; 005 remove a ligação incorreta a stocks_current. Publicar stockvision-read e send-zolve no Supabase, com JWT ativo e SALES_VISION_ALLOWED_ORIGINS=https://montedopasto.github.io. As credenciais de servidor permanecem apenas no Supabase.
 
-Consultar CONFIGURACAO.md e STOCKVISION.md. Nunca publicar credenciais Entra ou chaves de servidor.
+Ver CONFIGURACAO.md e STOCKVISION.md. Os parsers Excel são referências e servem os clientes e o Excel Zolve; não existe job duplicado de importação de stock.

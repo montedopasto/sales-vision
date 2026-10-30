@@ -9,8 +9,10 @@ export function createApi(sb){
   if(!member?.active)throw new Error('Utilizador sem autorização');
   const method=options.method||'GET';
   if(path==='/dashboard'&&method==='GET'){
-   const [orders,clients,stock,snapshots]=await Promise.all([sb.from('sv_orders').select('*').order('created_at',{ascending:false}).limit(200),allRows(sb,'sv_clients','id',true),allRows(sb,'sv_available','id'),sb.from('sv_stockvision_snapshots').select('*')]);
-   return json({orders:unwrap(orders),clients,stock,snapshots:unwrap(snapshots),member,user:{email:current.user.email}});
+   const [orders,clients,live]=await Promise.all([sb.from('sv_orders').select('*').order('created_at',{ascending:false}).limit(200),allRows(sb,'sv_clients','id',true),sb.functions.invoke('stockvision-read',{body:{}})]);
+   let sourceError=null;if(live.error){let detail;try{detail=await live.error.context?.json();}catch{}sourceError=detail?.error||live.error.message;}
+   if(live.data?.error)sourceError=live.data.error;
+   return json({orders:unwrap(orders),clients,stock:live.data?.stock||[],snapshots:live.data?.snapshots||[],source:live.data?.source,sourceError,member,user:{email:current.user.email}});
   }
   if(path==='/orders'&&method==='POST'){
    const b=JSON.parse(options.body);return json({id:unwrap(await sb.rpc('sv_reserve',{p_request:b.request_id,p_client:b.client_id,p_delivery:b.delivery,p_lines:b.lines}))});

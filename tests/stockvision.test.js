@@ -20,5 +20,9 @@ test('live StockVision reads reflect source updates, preserve units and deny uns
  await db.exec(`select set_config('test.uid','00000000-0000-0000-0000-000000000099',false)`);assert.equal((await db.query('select count(*)::int n from sv_available')).rows[0].n,0);
  await db.exec('reset role;set role anon;');await assert.rejects(db.query('select * from sv_available'),/permission denied/);
  await db.exec('reset role;');assert.equal((await db.query("select rowsecurity from pg_tables where tablename='stocks_current'")).rows[0].rowsecurity,false);assert.equal((await db.query("select count(*)::int n from pg_trigger where tgrelid='stocks_current'::regclass and not tgisinternal")).rows[0].n,0);
+ await db.exec(await readFile(new URL('../db/005_google_sheets_source.sql',import.meta.url),'utf8'));
+ assert.equal((await db.query("select to_regprocedure('public.sv_stockvision_rows()') as removed")).rows[0].removed,null);
+ await db.exec(`select set_config('test.uid','${uid}',false)`);
+ await assert.rejects(db.query(`select sv_reserve(gen_random_uuid(),'TEST',current_date,'[]')`),/folha STOCKS/);
  }finally{await db.close();}
 });
