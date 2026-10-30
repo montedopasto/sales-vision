@@ -34,3 +34,5 @@ test('Edge submits one immutable attachment and refuses repeated send attempts',
 test('Edge keeps uncertain state and never retries after timeout or settlement failure',async()=>{
  for(const options of [{failSend:true},{failSettle:true}]){const f=fixture(options);assert.equal((await f.handler(f.req())).status,409);assert.equal(f.sends.length,1);assert.equal(f.calls.at(-1)[1].p_state,'uncertain');}
 });
+
+test('Pages refuses duplicate FRZ/FRE ingestion before parsing or mutating any stock',async()=>{const f=fixture();for(const source of ['FRZ','FRE'])await assert.rejects(createApi(f.db)('/import/'+source,{method:'POST',body:new Uint8Array()}),/automaticamente pela StockVision/);assert.equal(f.calls.length,0);});

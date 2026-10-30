@@ -5,11 +5,11 @@ const json=data=>new Response(JSON.stringify(data),{headers:{'Content-Type':'app
 export function createApi(sb){
  return async(path,options={})=>{
   const current=(await sb.auth.getSession()).data.session;if(!current)throw new Error('Sessão expirada');
-  const member=unwrap(await sb.from('sv_users').select('*').eq('id',current.user.id).single());
+  const member=unwrap(await sb.from('sv_users').select('*').eq('id',current.user.id).maybeSingle());
   if(!member?.active)throw new Error('Utilizador sem autorização');
   const method=options.method||'GET';
   if(path==='/dashboard'&&method==='GET'){
-   const [orders,clients,stock,snapshots]=await Promise.all([sb.from('sv_orders').select('*').order('created_at',{ascending:false}).limit(200),allRows(sb,'sv_clients','id',true),allRows(sb,'sv_available','id'),sb.from('sv_snapshots').select('*')]);
+   const [orders,clients,stock,snapshots]=await Promise.all([sb.from('sv_orders').select('*').order('created_at',{ascending:false}).limit(200),allRows(sb,'sv_clients','id',true),allRows(sb,'sv_available','id'),sb.from('sv_stockvision_snapshots').select('*')]);
    return json({orders:unwrap(orders),clients,stock,snapshots:unwrap(snapshots),member,user:{email:current.user.email}});
   }
   if(path==='/orders'&&method==='POST'){
@@ -31,14 +31,14 @@ export function createApi(sb){
    }
    if(method==='POST'&&['cancel','fulfill'].includes(action)){unwrap(await sb.rpc('sv_'+action,{p_order:id}));return json({ok:true});}
   }
-  const imp=/^\/import\/(FRZ|FRE|clients)$/.exec(path);
+  if(/^\/import\/(FRZ|FRE)$/.test(path))throw new Error('O stock é atualizado automaticamente pela StockVision');
+  const imp=/^\/import\/(clients)$/.exec(path);
   if(imp&&method==='POST'){
    if(member.role!=='admin')throw new Error('Administrador necessário');
-   const kind=imp[1],cfg=await readIntegration(sb,defaults),{readRows,reportDate,sha256}=await import('../supabase/functions/_shared/workbooks.js');
-   const bytes=new Uint8Array(options.body);const mapping=kind==='clients'?cfg.clients:cfg.stock[kind];
+   const kind=imp[1],cfg=await readIntegration(sb,defaults),{readRows}=await import('../supabase/functions/_shared/workbooks.js');
+   const bytes=new Uint8Array(options.body);const mapping=cfg.clients;
    const rows=await readRows(bytes,mapping,kind);
-   if(kind==='clients')unwrap(await sb.rpc('sv_import_clients',{p_rows:rows}));
-   else unwrap(await sb.rpc('sv_import_daily_stock',{p_source:kind,p_date:reportDate(decodeURIComponent(options.headers['X-File-Name']||''),mapping),p_hash:await sha256(bytes),p_rows:rows}));
+   unwrap(await sb.rpc('sv_import_clients',{p_rows:rows}));
    return json({imported:rows.length,quarantined:rows.filter(r=>r.quality_issues?.length).length,blocked:rows.filter(r=>r.blocked).length});
   }
   throw new Error('Operação desconhecida');

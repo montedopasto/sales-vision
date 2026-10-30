@@ -1,24 +1,24 @@
-# Configuração de produção — GitHub Pages + Supabase existente
+# Configuração atual — 30/10/2026
 
-Não é necessário alojamento web Node separado.
+## Preparado no ambiente real
 
-1. Concluído: repositório tornado público com autorização expressa do utilizador em 29/10/2026. GitHub Pages ativo, com publicação confirmada.
-2. Concluído: Pages configurado com GitHub Actions e PAGES_ENABLED=true. O site foi aberto e verificado em https://montedopasto.github.io/sales-vision/. O workflow publica só a pasta dist.
-3. Preencher as variáveis públicas SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY do build, ou public/config.json. Nunca usar service role ou segredos Entra nestes campos.
-4. Aplicar as migrações 001, 002 e 003, por ordem, depois de ensaio e backup, sem reaplicar as já executadas.
-5. Configurar o provider Entra/Azure e autorizar o redirect completo do GitHub Pages, incluindo /sales-vision/. Adicionar os membros reais em sv_users.
-6. Publicar a função send-zolve no projeto Supabase com verify_jwt ativo. Configurar SALES_VISION_ALLOWED_ORIGINS com a origem real do site, por exemplo https://montedopasto.github.io. A validação de utilizador e autorização também acontece dentro da função.
-7. Guardar o override privado config/live.json na linha sv_settings.id='integration'. Os To/CC são os do EML fornecido. Não colocar esse ficheiro no GitHub Pages. Validar a distribuição atual antes do primeiro envio real.
-8. Fornecer o Excel de clientes para definir clients.sheet, headerRow e columns com os campos id, name, address, postal_code e city. Não inferir as moradas a partir de células ocultas do pedido antigo.
-9. Ativar o importador diário GitHub Actions apenas depois de configurar a mailbox, remetente, permissões Mail.Read e segredos do job. A importação manual funciona diretamente no browser e Supabase.
+- Repositório público e GitHub Pages ativos, mediante autorização do utilizador.
+- Supabase existente retomado; aplicação Microsoft limitada ao tenant Monte do Pasto; provider Azure ativo; redirect exato https://montedopasto.github.io/sales-vision/ autorizado.
+- A conta jose.almanso@montedopasto.pt consentiu perfil, manutenção de sessão e Mail.Send apenas para a sua conta e foi associada como administrador na Sales Vision. Não houve consentimento para toda a organização.
+- Configuração pública de Supabase em public/config.json; apenas URL e publishable key. Credencial Entra foi introduzida pelo utilizador diretamente no painel.
+- Migrações 001–003 aplicadas. A migração 004 liga o stock em leitura direta à StockVision e retira as permissões dos importadores duplicados.
+- Função send-zolve publicada com verificação JWT ativa e origem permitida https://montedopasto.github.io; destinatários do EML guardados de forma privada em sv_settings.
 
-Para adicionar o primeiro administrador, depois de o utilizador existir no Supabase Auth:
+## Pendente para o fluxo comercial completo
 
-```sql
-insert into public.sv_users(id, entra_oid, role)
-values ('<UUID REAL SUPABASE AUTH>', '<OBJECT ID REAL ENTRA>', 'admin');
-```
+A fonte stocks_current precisa de publicar caixas explícitas, estado de bloqueio, temperatura e data do relatório. O esquema atual só dispõe de kg e datas básicas; não permite reservas em caixas com segurança. A Sales Vision não modifica a integração StockVision para suprir esses campos. Ver STOCKVISION.md.
 
-O mapeamento real dos DailyReports e o formulário FM.01107 estão em supabase/functions/_shared/defaults.json. config/defaults.json mantém uma cópia para o job Node. O conteúdo do override privado é mesclado com estes defaults. Os únicos dados de configuração públicos são a URL e a publishable key do Supabase.
+Falta o ficheiro real de clientes e validar o seu mapeamento em config/live.json/sv_settings. Não inferir dados de clientes a partir do pedido antigo. Não criar clientes de exemplo na produção.
 
-Envios sending/uncertain mantêm as reservas. Verificar os Itens Enviados pelo UUID antes de qualquer intervenção. Nunca repetir automaticamente um envio sem confirmação do resultado.
+A função de email foi publicada, mas o runtime e o fluxo comercial completo em produção ainda precisam de validação com dados completos. Qualquer envio real necessita de uma encomenda revista e autorização para o destinatário; nenhum email foi enviado.
+
+## Instalação noutro ambiente
+
+Aplicar db/001 a db/004 por ordem numa base com o esquema StockVision verificado. Configurar provider Azure, redirect, membros sv_users, configuração privada e função send-zolve. Preservar o Site URL e os redirects de outras aplicações.
+
+Não ativar um segundo importador de mailbox. Os antigos scripts e workflow de importação independente foram removidos. Os ficheiros de parser continuam apenas para referências, clientes e geração Excel.
