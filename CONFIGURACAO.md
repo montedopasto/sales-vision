@@ -9,3 +9,6 @@ Migrações: aplicar 001–005 por ordem, sem reaplicar as existentes. A migraç
 A função send-zolve está publicada com JWT ativo. Configuração Zolve privada em sv_settings, baseada no EML fornecido. Não foi enviado nenhum email. O fluxo comercial completo continua dependente de caixas, bloqueios, temperatura/data do relatório e da lista real de clientes. A folha atual tem KG e dados básicos; a app não inventa caixas.
 
 Os antigos jobs de importação FRZ/FRE e mailbox foram removidos. Não criar outro importador. As rotinas Excel mantêm-se apenas como referência, para clientes e para a geração do pedido Zolve.
+
+
+Atualização 0.6: o leitor Google Sheets reconhece CaixasDisponiveis, Bloqueado, MotivoBloqueio, TipoStock e DataRelatorio. Apresenta caixas físicas, estado, FRZ/FRE e data real do relatório. Não deduz temperatura a partir do tipo. Para consulta, considera atual apenas o relatório do dia em Europe/Lisbon; datas futuras são assinaladas. A data de leitura continua separada. As reservas e o envio continuam indisponíveis até concluir a ligação transacional; o servidor devolve reservations_enabled=false e mantém available=0. A interface não apresenta as caixas físicas como disponíveis para reservar.

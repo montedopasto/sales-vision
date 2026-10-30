@@ -21,3 +21,6 @@ A folha não publica caixas, bloqueios, temperatura ou data do relatório. Reser
 Node 22+: npm ci, npm test, npm run build, npm start. Aplicar db/001 até 005 por ordem sem reaplicar migrações existentes. 004 é histórica; 005 remove a ligação incorreta a stocks_current. Publicar stockvision-read e send-zolve no Supabase, com JWT ativo e SALES_VISION_ALLOWED_ORIGINS=https://montedopasto.github.io. As credenciais de servidor permanecem apenas no Supabase.
 
 Ver CONFIGURACAO.md e STOCKVISION.md. Os parsers Excel são referências e servem os clientes e o Excel Zolve; não existe job duplicado de importação de stock.
+
+
+Atualização 0.6: o leitor Google Sheets reconhece CaixasDisponiveis, Bloqueado, MotivoBloqueio, TipoStock e DataRelatorio. Apresenta caixas físicas, estado, FRZ/FRE e data real do relatório. Não deduz temperatura a partir do tipo. Para consulta, considera atual apenas o relatório do dia em Europe/Lisbon; datas futuras são assinaladas. A data de leitura continua separada. As reservas e o envio continuam indisponíveis até concluir a ligação transacional; o servidor devolve reservations_enabled=false e mantém available=0. A interface não apresenta as caixas físicas como disponíveis para reservar.
